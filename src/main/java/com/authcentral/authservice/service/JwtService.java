@@ -6,6 +6,8 @@ import javax.crypto.SecretKey;
 
 import org.springframework.stereotype.Service;
 
+import com.authcentral.authservice.domain.ClientApplication;
+
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
@@ -24,12 +26,14 @@ public class JwtService {
     }
 
     // Générer un JWT pour un client
-    public String generateToken(String clientId) {
+    public String generateToken(ClientApplication app) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + EXPIRATION_TIME_MS);
 
         return Jwts.builder()
-                .setSubject(clientId)
+                .setSubject(app.getClientId())
+                .claim("app_name", app.getName())
+                .claim("type", "CLIENT")
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .signWith(secretKey, SignatureAlgorithm.HS256)

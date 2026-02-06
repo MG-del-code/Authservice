@@ -35,9 +35,9 @@ public class AuthService {
         );
 
         if (!secretMatches) {
-            throw new RuntimeException("Client secret invalide");
+            throw new RuntimeException("Client secret invalide"); 
         }
-        String token = jwtService.generateToken(client.getClientId());
+        String token = jwtService.generateToken(client);
 
         return new TokenResponseDTO(
                 token,
