@@ -13,12 +13,12 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-
+ 
 @Entity
 @Table(
     name = "user_application_roles",
     uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"user_id", "application_id"})
+        @UniqueConstraint(columnNames = {"user_id", "application_id", "role_id"})
     }
 )
 public class UserApplicationRole {
