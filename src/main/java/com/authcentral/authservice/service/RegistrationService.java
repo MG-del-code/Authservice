@@ -2,6 +2,7 @@ package com.authcentral.authservice.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
  
 import com.authcentral.authservice.domain.*;
@@ -19,7 +20,13 @@ public class RegistrationService {
     private final UserApplicationRoleRepository userApplicationRoleRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public RegistrationService(ClientApplicationRepository applicationRepository, PasswordEncoder passwordEncoder, RoleRepository roleRepository, UserApplicationRoleRepository userApplicationRoleRepository, UserRepository userRepository) {
+    public RegistrationService(
+        ClientApplicationRepository applicationRepository,
+        PasswordEncoder passwordEncoder,
+        RoleRepository roleRepository,
+        UserApplicationRoleRepository userApplicationRoleRepository,
+        UserRepository userRepository
+    ) {
         this.applicationRepository = applicationRepository;
         this.passwordEncoder = passwordEncoder;
         this.roleRepository = roleRepository;
@@ -30,12 +37,23 @@ public class RegistrationService {
     @Transactional
     public RegisterResponse register(RegisterRequest request) {
 
-        // 1. Vérifier l’application cliente
-        ClientApplication application = applicationRepository
-                .findByClientId(request.getClientId())
-                .orElseThrow(() -> new IllegalArgumentException("Application inconnue"));
+        /* ==========================
+           1. Récupération de l’app cliente depuis le JWT
+           ========================== */
+        String clientId = (String) SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getPrincipal();
 
-        // 2. Créer ou récupérer l’utilisateur
+        ClientApplication application = applicationRepository
+                .findByClientId(clientId)
+                .orElseThrow(() ->
+                    new IllegalArgumentException("Application cliente inconnue")
+                );
+
+        /* ==========================
+           2. Création ou récupération de l’utilisateur global
+           ========================== */
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseGet(() -> {
                     User u = new User(
@@ -45,22 +63,44 @@ public class RegistrationService {
                     return userRepository.save(u);
                 });
 
-        // 3. Vérifier s’il est déjà inscrit dans cette application
-        if (userApplicationRoleRepository.existsByUserAndApplication(user, application)) {
-            throw new IllegalStateException("Utilisateur déjà inscrit dans cette application");
-        }
-
-        // 4. Rôle par défaut de l’application
+        /* ==========================
+           3. Création ou récupération du rôle USER (auto-bootstrap)
+           ========================== */
         Role defaultRole = roleRepository
                 .findByNameAndApplication("USER", application)
-                .orElseThrow(() -> new IllegalStateException("Rôle USER manquant"));
+                .orElseGet(() -> {
+                    Role role = new Role("USER", application);
+                    return roleRepository.save(role);
+                });
 
-        // 5. Lier user ↔ application ↔ rôle
-        UserApplicationRole link = new UserApplicationRole(user, application, defaultRole);
- 
+        /* ==========================
+           4. Vérifier doublon USER ↔ APPLICATION ↔ ROLE
+           ========================== */
+        boolean alreadyLinked =
+                userApplicationRoleRepository
+                    .existsByUserAndApplicationAndRole(
+                        user,
+                        application,
+                        defaultRole
+                    );
+
+        if (alreadyLinked) {
+            throw new IllegalStateException(
+                "L'utilisateur possède déjà ce rôle dans cette application"
+            );
+        }
+
+        /* ==========================
+           5. Lier User ↔ Application ↔ Role
+           ========================== */
+        UserApplicationRole link =
+                new UserApplicationRole(user, application, defaultRole);
+
         userApplicationRoleRepository.save(link);
 
-        // 6. Réponse
+        /* ==========================
+           6. Réponse
+           ========================== */
         RegisterResponse response = new RegisterResponse();
         response.setUserId(user.getId());
         response.setEmail(user.getEmail());

@@ -12,7 +12,7 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
-@Entity
+@Entity 
 @Table(
     name = "client_applications",
     uniqueConstraints = {

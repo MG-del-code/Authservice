@@ -12,9 +12,6 @@ public class RegisterRequest {
     @NotBlank
     private String password;
 
-    @NotBlank
-    private String clientId;
-
     // getters & setters
 
       public String getEmail() {
@@ -30,12 +27,5 @@ public class RegisterRequest {
     }
     public void setPassword(String password) {
         this.password = password;
-    }
-
-    public String getClientId() {
-        return clientId;
-    }
-    public void setClientId(String clientId) {
-        this.clientId = clientId;
     }
 }
