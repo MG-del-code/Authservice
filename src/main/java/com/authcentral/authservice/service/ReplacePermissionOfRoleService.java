@@ -44,6 +44,10 @@ public class ReplacePermissionOfRoleService {
                 .findByNameAndApplication(request.getOldPermissionName(), app)
                 .orElseThrow(() -> new IllegalStateException("Ancienne permission inexistante"));
 
+        if (!rolePermissionRepository.existsByRoleAndPermission(role, oldPermission)) {
+            throw new IllegalStateException("La permission à remplacer n'est pas associée à ce rôle" );
+        } 
+
         Permission newPermission = permissionRepository
                 .findByNameAndApplication(request.getNewPermissionName(), app)
                 .orElseGet(() -> permissionRepository.save(

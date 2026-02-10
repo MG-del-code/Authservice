@@ -48,6 +48,10 @@ public class RemovePermissionFromRoleService {
                 .findByNameAndApplication(request.getPermissionName(), app)
                 .orElseThrow(() -> new IllegalStateException("Permission inexistante"));
 
+        if (!rolePermissionRepository.existsByRoleAndPermission(role, permission)) {
+                throw new IllegalStateException("La permission n'est pas associée à ce rôle" );
+        }
+
         rolePermissionRepository.deleteByRoleAndPermission(role, permission);
     }
 }
